@@ -1,50 +1,95 @@
-# OpenCV Intrusion Detection System
-<a target="_blank" href="https://colab.research.google.com/github/Brandi-Kinard/opencv-intrusion-detection/blob/main/Intrusion_Detection_Application.ipynb">
-  <img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/>
-</a>
+# Smart Surveillance for Intrusion Detection using Background Subtraction
 
-## Overview
-Welcome to the repository of the OpenCV Intrusion Detection System, a sophisticated tool designed to enhance security by monitoring surveillance video streams for unusual activities. This system not only identifies intrusions but also archives relevant video segments for further analysis and can trigger alerts to notify security personnel.
+A BTech Computer Vision mini-project that detects moving objects in a fixed-camera
+scene (webcam or CCTV-style video) and raises an **"INTRUSION DETECTED"** alert when
+a moving object enters a user-defined restricted zone.
 
-<img width="1267" alt="image" src="https://github.com/Brandi-Kinard/opencv-intrusion-detection/assets/52756042/70c02253-2659-4c75-9526-617c73683890">
+Core technique: **OpenCV background subtraction (MOG2 / KNN)** — no deep learning,
+no YOLO, no face recognition.
 
+## Project Structure
 
-
-## Why This Project is Important
-In today's world, the safety and security of physical spaces are paramount. This project leverages computer vision and machine learning to provide a vigilant, always-on watch over sensitive areas, ensuring that any unusual activity is promptly detected and addressed. It's particularly useful in settings such as banks, stores, and private properties.
-
-## How It Works
-- **Background Subtraction**: Uses `createBackgroundSubtractorKNN()` to differentiate moving objects from the static background.
-- **Noise Reduction**: Applies erosion to the foreground masks to minimize noise, ensuring that motion detection is accurate.
-- **Motion Detection**: Analyzes the shapes in the video via `findContours()` to capture the contours of moving objects.
-- **Intrusion Identification**: Identifies potential intrusions by assessing the size and location of the largest moving object.
-- **Alerts and Record-Keeping**: When an intrusion is detected, the system saves the relevant video segment and can trigger an alert.
-
-## How to Use This Project
-To get started with this motion detection notebook:
-1. Clone this repository to your local machine using `git clone https://github.com/Brandi-Kinard/opencv-intrusion-detection.git`
-2. Ensure you have Jupyter Notebook installed, or use **Google Colab** (accessible via the "Open in Colab" badge above) to open the notebook.
-3. Install necessary libraries (listed in the Prerequisites section below).
-4. Run the notebook cells sequentially to observe motion detection in action.
-
-## Prerequisites
-Ensure you have the following installed:
-
-- Python 3.6+
-- OpenCV (opencv-python)
-- Matplotlib
-- IPython (for Jupyter functionality)
-- Moviepy
-- Imageio
-- Numpy
-
-Install these packages using pip:
-```bash
-pip install opencv-python matplotlib ipython moviepy numpy imageio
+```
+opencv-intrusion-detection/
+├── intrusion_detection.py   # main runnable script (the whole project)
+├── requirements.txt         # Python dependencies
+├── intruder.mp4             # sample CCTV-style test video
+├── report/
+│   ├── REPORT.md            # academic report content
+│   ├── VIVA_QUESTIONS.md    # viva / oral exam preparation
+│   └── PRESENTATION_SCRIPT.md  # 1-minute demo video script
+└── README.md
 ```
 
-## For the Future
-If you want to add more, Please don't hesitate to open a [pull request](https://github.com/Brandi-Kinard/opencv-intrusion-detection/pulls).
+## Installation
 
-## 👋 Get in Touch
-[![text](https://img.shields.io/badge/LinkedIn-0077B5?style=for-the-badge&logo=linkedin&logoColor=white)](https://www.linkedin.com/in/brandi-kinard)
+```bash
+pip install -r requirements.txt
+```
+
+(or directly: `pip install opencv-python numpy`)
+
+Requires Python 3.8+.
+
+## How to Run
+
+Run on the bundled sample video (default):
+
+```bash
+python intrusion_detection.py
+```
+
+Run using your webcam instead:
+
+```bash
+python intrusion_detection.py --source 0
+```
+
+Run on your own video file:
+
+```bash
+python intrusion_detection.py --source path/to/your_video.mp4
+```
+
+Use KNN instead of MOG2 for background subtraction:
+
+```bash
+python intrusion_detection.py --algo KNN
+```
+
+Two windows will open:
+- **Live Feed** — the video with bounding boxes, the restricted zone, and the
+  intrusion alert banner.
+- **Foreground Mask** — the raw output of background subtraction, useful for
+  explaining how the algorithm sees "motion".
+
+Press **q** or **ESC** in either window to exit.
+
+## How It Works (short version)
+
+1. Each frame is compared against a running statistical model of the background
+   (`cv2.createBackgroundSubtractorMOG2`) to produce a foreground mask.
+2. The mask is thresholded to drop shadow pixels, then cleaned up with
+   morphological opening + dilation to remove noise and solidify object shapes.
+3. `cv2.findContours` finds the outlines of remaining foreground blobs; small
+   ones are discarded as noise.
+4. A bounding box is drawn around each real moving object.
+5. If a bounding box overlaps the rectangular restricted zone drawn on screen,
+   the frame is flagged as an intrusion and "INTRUSION DETECTED" is displayed.
+
+Full explanation, architecture diagram, and report material are in `report/REPORT.md`.
+
+## Adjusting the Restricted Zone / Sensitivity
+
+Open `intrusion_detection.py` and edit the constants near the top of the file:
+
+- `ZONE_X1, ZONE_Y1, ZONE_X2, ZONE_Y2` — restricted area corners (as a fraction
+  of the frame width/height, so `0.5, 0.5` is always the center of the frame).
+- `MIN_CONTOUR_AREA` — increase this if small movements (leaves, noise, shadows)
+  are wrongly triggering detections; decrease it to detect smaller/farther objects.
+
+## Troubleshooting
+
+See the **Troubleshooting** section in the full write-up (`report/REPORT.md`) for
+fixes to common issues: camera not opening, noisy detections, constant bounding
+boxes, and OpenCV installation errors.
